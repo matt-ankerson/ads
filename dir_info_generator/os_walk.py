@@ -26,7 +26,7 @@ def walk_gen(path):
         child_path = os.path.join(path, d)      # compose path to child directory.
         child_dirs, child_files = list_contents(child_path)
         for it in walk_gen(child_path):
-            yield it                   # recursive call must go in loop in some form
+            yield it                 
       
 for item in walk_gen('/Users/matt/Documents/Polytechnic/BITY3/repos'):
     print(item)
