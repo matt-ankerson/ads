@@ -25,18 +25,14 @@ class Stack:
             raise Empty('Stack is empty')
         return self._data.pop()
         
-# Function to parse a mathematical expression
+# Function to parse a mathematical expression with only single digits
 def compute_expression(ex):
     operators = {'*': lambda x, y: x * y, '+': lambda x, y: x + y,\
     '-': lambda x, y: x - y, '/': lambda x, y: x / y}
     stack = Stack()
-    cur_index = 0
     for c in ex:
         if c == '(':
-            # we need to remember our previously computed value, and compute the next
-            if not stack.is_empty():
-                if hasattr(stack.top(), '__call__'):
-                    stack.push(compute_expression(ex[cur_index+1:-1]))
+            pass
         elif c == ')':  # this means we need to perform the computation now
             operand_2 = stack.pop()
             operator = stack.pop()
@@ -48,10 +44,9 @@ def compute_expression(ex):
             pass
         else:   # c is an operator
             stack.push(operators[c])
-        cur_index += 1
     # return the result of the expression
     return stack.pop()
  
            
-result = compute_expression('((3 + 3)/2) - (6 * (8 - 2))')
+result = compute_expression('(((3 + 3)/2) - (6 * (8 - 2)))')
 print(result)
