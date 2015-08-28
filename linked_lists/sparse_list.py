@@ -71,5 +71,4 @@ if __name__ == "__main__":
     print('Length: ' + str(len(L)))
     
     for item in L:
-        print item
-          
+        print item  
