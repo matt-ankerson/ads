@@ -17,14 +17,19 @@ class LinkedTree(Tree):
         
     def add_root(self, element):
         self.root = self._create_node(None, [], element)
+        self._n_nodes += 1
         
-    def root(self):
+    def get_root(self):
         # Return the root node of this tree.
         return self.root
         
     def parent(self, node):
         # Return the parent of the given node.
         return node['parent']
+        
+    def element(self, node):
+        '''Return the element stored in the given node.'''
+        return node['element']
         
     def num_children(self, node):
         # Return the number of children that node has.
@@ -40,6 +45,7 @@ class LinkedTree(Tree):
         # Return the newly created node
         child = self._create_node(node, [], element)
         node['children'].append(child)
+        self._n_nodes += 1
         return child
         
     def replace(self, node, new_element):

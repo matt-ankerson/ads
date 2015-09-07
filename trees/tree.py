@@ -9,7 +9,7 @@ class Tree():
     def __init__(self):
         pass
         
-    def root(self):
+    def get_root(self):
         # Return the root node of this tree.
         raise NotImplementedError('Must be implemented by subclass.')
         
@@ -99,7 +99,7 @@ class Tree():
             while not fringe.is_empty():
                 node = fringe.dequeue()     # Remove node from start of the queue
                 yield node                  # Return this node
-                for child in self,children(node):
+                for child in self.children(node):
                     fringe.enqueue(child)   # Add children to the back of the queue
         
     def __iter__(self):
