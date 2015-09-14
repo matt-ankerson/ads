@@ -21,6 +21,20 @@ class StockExchange(object):
         '''Input a sell order, regardless of any suitable buy order.'''
         self.sellers.push(sell_order, sell_order)   # use order value for key and value.
         
+    def get_buyers(self):
+        '''Return a list of all pending buyers.'''
+        summary = 'Pending Buyers: \n'
+        for buyer in self.buyers.elements():
+            summary += ('$' + str(buyer._key) + '\n')
+        return summary
+        
+    def get_sellers(self):
+        '''Return a list of all pending sellers.'''
+        summary = 'Pending Sellers: \n'
+        for seller in self.sellers.elements():
+            summary += ('$' + str(seller._key) + '\n')
+        return summary
+        
     def process(self):
         '''Process buy orders in an optimal match-up fashion. O(n2) time.'''
         # A buy order for $x can only be processed if there is an existing sell order with price $y
@@ -58,3 +72,7 @@ if __name__ == '__main__':
     se.sell(138)
     result = se.process()
     print(result)
+    buyers_remaining = se.get_buyers()
+    sellers_remaining = se.get_sellers()
+    print(buyers_remaining)
+    print(sellers_remaining)
