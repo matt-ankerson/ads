@@ -15,7 +15,7 @@ class GameState(object):
     def _possible_positions(self, player):
         '''Generate an iteration of each possible next gamestate'''
         if self.score() == 0:                       # If this is not a leaf:
-            board_cp = self.board                   # Copy the main board
+            board_cp = self.board[:]                   # Copy the main board
             for r in range(len(self.board)):
                 for c in range(len(self.board[0])):
                     if board_cp[r][c] == '-':      # the player could go here.
