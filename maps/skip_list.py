@@ -52,8 +52,8 @@ class SkipList(object):
             return not (self == other)
     
     def __init__(self):
-        self.start = self._Item(-sys.maxint, None, None, None, None, None)
-        self.end = self._Item(sys.maxint, None, None, None, None, None)
+        self.start = self._Item('!', None, None, None, None, None)
+        self.end = self._Item('~', None, None, None, None, None)
         self.start.next = self.end
         self.end.prev = self.start  # start with a single level.
         self.n_items = 0
@@ -149,8 +149,8 @@ class SkipList(object):
             if i >= self.height:
                 self.height += 1            # Add a new level to the skip list.
                 t = self.start.next
-                self.start = self.insert_after_above(None, self.start, -sys.maxint, None)        # Grow leftmost tower.
-                self.insert_after_above(self.start, t, sys.maxint, None)                         # Grow rightmost tower.
+                self.start = self.insert_after_above(None, self.start, ' ', None)        # Grow leftmost tower.
+                self.insert_after_above(self.start, t, '~', None)                         # Grow rightmost tower.
             while p.above is None:
                 p = p.prev                      # Scan backward.
             p = p.above                     # Jump up to a higher level.
@@ -218,5 +218,6 @@ class SkipList(object):
         
 if __name__ == '__main__':
     map = SkipList()
-    map[1] = 2
-    print(map.remove(1))
+    map['c'] = 'quack'
+    value = map.remove('c')
+    print(value)
