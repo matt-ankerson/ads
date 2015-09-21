@@ -98,34 +98,35 @@ class SkipList(object):
         item = self._validate_position(p)
         return self._make_position(item.prev)
         
+    
     def skip_search(self, k):
         '''Return the position p in the bottom list S-0, with the largest key
             such that key(p) <= k'''
-        p = self.start_pos()               # Begin at start position.
-        while self.below(p) is not None:   # While there's an element below:
-            p = self.below(p)           # Drop down.
-            while k >= self.next(p)._item.key:     # While the next key is less than k:
-                p = self.next(p)        # Scan forward.
+        p = self.start                  # Begin at start position.
+        while p.below is not None:      # While there's an element below:
+            p = p.below                 # Drop down.
+            while k >= p.next.key:      # While the next key is less than k:
+                p = p.next              # Scan forward.
         return p                        # Return resulting position.
         
-    def insert_after_above(self, p, q, k, v):
-        '''Insert an item storing (k, v), after item p (on the same level as p), and above item q,
-            returning the new item r.'''
-        r = None
+    def insert_after_above(self, prev, below, k, v):
+        '''Insert an item storing (k, v), after item prev (on the same level as prev), and above item below,
+            returning the new item.'''
+        new_item = None
         # _Item(key, value, prev, next, above, below)
-        if p is None:
-            r = self._Item(k, v, None, None, None, q)
-            q.above = r
-        elif q is None:
-            r = self._Item(k, v, p, p.next, None, None)
-            p.next.prev = r
-            p.next = r 
+        if prev is None:    # This is a new left tower
+            new_item = self._Item(k, v, None, self.end, None, below)    
+            below.above = new_item
+        elif below is None: # This is on the bottom level
+            new_item = self._Item(k, v, prev, prev.next, None, None)
+            prev.next.prev = new_item
+            prev.next = new_item 
         else:
-            r = self._Item(k, v, p, p.next, None, q)
-            p.next.prev = r
-            p.next = r                # Stitch up references on this layer.
-            q.above = r
-        return r
+            new_item = self._Item(k, v, prev, prev.next, None, below)
+            prev.next.prev = new_item
+            prev.next = new_item                # Stitch up references on this layer and the below.
+            below.above = new_item
+        return new_item
     
     def __getitem__(self, k):
         '''Return the value associated with this key.'''
@@ -140,20 +141,22 @@ class SkipList(object):
         
     def __setitem__(self, k, v):
         '''Set the value associated with this key, or create a new item associated with this key.'''
-        p = self.skip_search(k)             # p is the bottom level position with the largest key less than or equal to k.
+        p = self.skip_search(k)             # p is the bottom level item with the largest key less than or equal to k.
         q = None                            # q will represent top item in the new item's tower.
-        i = -1
-        while self._coin_flip() == 'heads':     # Toss a coin
+        i = 0
+        while True:     # Repeat
             i += 1
             if i >= self.height:
                 self.height += 1            # Add a new level to the skip list.
-                t = self.next(self.start_pos()) # Get rightmost top position.
-                self.start = self.insert_after_above(None, self.start_pos(), -sys.maxint, None)            # Grow leftmost tower.
-                self.insert_after_above(self.start, t._item, sys.maxint, None)                         # Grow rightmost tower.
-            while self.above(p) is None:
-                p = self.prev(p)            # Scan backward.
-            p = self.above(p)               # Jump up to a higher level.
-            q = self.insert_after_above(p._item, q._item, k, v)     # Increase height of new item's tower.
+                t = self.start.next
+                self.start = self.insert_after_above(None, self.start, -sys.maxint, None)        # Grow leftmost tower.
+                self.insert_after_above(self.start, t, sys.maxint, None)                         # Grow rightmost tower.
+            while p.above is None:
+                p = p.prev                      # Scan backward.
+            p = p.above                     # Jump up to a higher level.
+            q = self.insert_after_above(p, q, k, v)     # Increase height of new item's tower.
+            if self._coin_flip() == 'tails':    # Until we get a tails.
+                break
         self.n_items += 1
         return q
         
@@ -175,13 +178,13 @@ class SkipList(object):
     def remove(self, k):
         '''Remove the item associated with key k and return its value v.'''
         p = self.skip_search(k)
-        if p._item.key != k:
+        if p.key != k:
             raise KeyError('Supplied key is invalid.')
-        v = p._item.value
-        while self.above(p) is not None:    # Remove p and all positions above.
-            p._item.prev.next = p._item.next
-            p._item.next.prev = p._item.prev    # cut out position p.
-            p = self.above(p)
+        v = p.value
+        while p.above is not None:    # Remove p and all positions above.
+            p.prev.next = p.next
+            p.next.prev = p.prev    # cut out position p.
+            p = p.above
         return v
     
     def find_min(self):
@@ -212,3 +215,8 @@ class SkipList(object):
         '''Iterate all items with keys with start <= key < stop. If min or max is None, 
             iteration begins and ends at the start and end of the list respectively.'''
         pass
+        
+if __name__ == '__main__':
+    map = SkipList()
+    map[1] = 2
+    print(map.remove(1))
