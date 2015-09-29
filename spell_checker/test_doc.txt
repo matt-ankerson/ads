@@ -1,0 +1,3 @@
+Heljo my name is matt. 
+I am writing a spelll checker that is supposed to check this passage of teext for splling errrs.
+Hopefuly it cna efficiently determiine the errors adn provid suggestions.
