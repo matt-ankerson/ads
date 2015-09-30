@@ -27,9 +27,13 @@ class SpellChecker(object):
             node.word = word    # Assign the whole word to this leaf node.
 
     def __init__(self, correct_words_filename=''):
-        self.word_trie = self._TrieNode()          # Use trie for word map.
-        self.word_map = {}
-        self.max_cost = 2   # For our maximum Levenshtein distance / cost.
+        # Python set holds all correct words for very fast validation.
+        # We're using more memory by doing this, but reducing the number of
+        # computations performed by weeding out words that the trie would
+        # incorrectly consider miss-spelled.
+        self.word_set = set()
+        self.word_trie = self._TrieNode()           # Use trie for word map.
+        self.max_cost = 1   # For our maximum Levenshtein distance / cost.
         if correct_words_filename == '':
             correct_words_filename = 'correct_words.txt'
         self.load_correct_words(correct_words_filename)
@@ -58,11 +62,12 @@ class SpellChecker(object):
         return matrix[n][m]
 
     def load_correct_words(self, filename):
-        '''Load lines of text file at filename into the trie.'''
+        '''Load lines of text file at filename into the set and trie.'''
         with open(filename, 'r') as word_file:
             for line in word_file:
                 word = str.strip(line)
                 self.word_trie.insert(word)
+                self.word_set.add(word)
 
     def _search_recursive(self, node, letter, word, prev_row, results):
         '''Recursive function for building our Levenshtein table
@@ -85,7 +90,7 @@ class SpellChecker(object):
         # If the last entry in the current row is less than 2,
         # and there is a word in this node, then add it.
         if cur_row[-1] <= self.max_cost and node.word is not None:
-            results.append((node.word, cur_row[-1]))
+            results.append((node.word))
         # If ANY entries in the current row are less than our cost, then
         # recur on each branch.
         if min(cur_row) <= self.max_cost:
@@ -96,6 +101,11 @@ class SpellChecker(object):
     def search_word_trie(self, word):
         '''Returns a list of all words within our maximum Levenshtein
         distance to the given word.'''
+        length = len(word)
+        if length == 1:
+            return []
+        if word in self.word_set:
+            return []
         # First row of distance table. 1 col for each letter, plus 1 for the
         # empty string in the first node.
         cur_row = range(len(word) + 1)
@@ -105,39 +115,6 @@ class SpellChecker(object):
             self._search_recursive(self.word_trie.children[letter], letter,
                                    word, cur_row, results)
         return results
-
-    def check_spelling(self, word):
-        '''Perform spell check and offer suggestions.'''
-        errors = []     # Build list of errors
-        length = len(word)
-        if length == 1:
-            return None
-        if word in self.word_map[length]:
-            return None
-        selected_set = self.word_map[length].union(self.word_map[length + 1])
-        for w in selected_set:
-            distance = self.calculate_distance(word, w)
-            if distance < 2:    # 2 is our maximum cost.
-                errors.append(w)
-        return errors
-
-    def check_spelling_on_file(self, filename):
-        '''Check spelling on each word in the file at the filename.'''
-        output = ''
-        with open(filename, 'r') as word_file:
-            line_no = 1
-            for line in word_file:
-                line = str.strip(line)
-                words = line.split(' ')
-                for word in words:
-                    word = word.translate(None, "'!.,$#@%^&*()+=")
-                    word = word.lower()
-                    result = self.check_spelling(word)
-                    if result is not None:
-                        output += '\n' + str(line_no) + ' ' + \
-                            word + ' (' + str(result) + ')'
-                line_no += 1
-        return output
 
     def iter_spelling_on_file(self, filename):
         '''Check spelling on each word in the file at the given filename.
@@ -150,13 +127,12 @@ class SpellChecker(object):
                 for word in words:
                     word = word.translate(None, "'!.,$#@%^&*()+=")
                     word = word.lower()
-                    result = self.check_spelling(word)
-                    if result is not None:
+                    results = self.search_word_trie(word)
+                    if len(results) > 0:
                         yield 'Line: ' + str(line_no) + ' ' + word + ' (' + \
-                            str(result).translate(None, "[]'") + ')'
+                            str(results).translate(None, "[]'()") + ')'
                 line_no += 1
 
 if __name__ == '__main__':
     speller = SpellChecker('correct_words.txt')
     print speller.search_word_trie('goober')
-    # print speller.check_spelling_on_file('test_doc.txt')
