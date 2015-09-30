@@ -10,7 +10,7 @@
 class SpellChecker(object):
 
     def __init__(self, correct_words_filename=''):
-        self.word_map = {}
+        self.word_map = {}          # Dictionary for word map.
         if correct_words_filename == '':
             correct_words_filename = 'correct_words.txt'
         self.load_correct_words(correct_words_filename)
@@ -35,7 +35,7 @@ class SpellChecker(object):
                 v1 = matrix[i - 1][j] + 1
                 v2 = matrix[i][j - 1] + 1
                 v3 = matrix[i - 1][j - 1] + cost
-                matrix[i][j] = min(v1, v2, v3)  # take the minimun value
+                matrix[i][j] = min(v1, v2, v3)  # take the minimum value
         return matrix[n][m]
 
     def load_correct_words(self, filename):
@@ -60,7 +60,7 @@ class SpellChecker(object):
         selected_set = self.word_map[length].union(self.word_map[length + 1])
         for w in selected_set:
             distance = self.calculate_distance(word, w)
-            if distance < 2:
+            if distance < 2:    # 2 is our maximum cost.
                 errors.append(w)
         return errors
 
