@@ -55,9 +55,9 @@ class SpellChecker(object):
         for i in range(1, n + 1):   # For each row
             for j in range(1, m + 1):   # For each col
                 cost = int((ord(start[i - 1]) - ord(finish[j - 1])) != 0)
-                v1 = matrix[i - 1][j] + 1
-                v2 = matrix[i][j - 1] + 1
-                v3 = matrix[i - 1][j - 1] + cost
+                v1 = matrix[i - 1][j] + 1           # deletion of a char
+                v2 = matrix[i][j - 1] + 1           # insersion of a char
+                v3 = matrix[i - 1][j - 1] + cost    # match or mismatch
                 matrix[i][j] = min(v1, v2, v3)  # take the minimum value
         return matrix[n][m]
 
@@ -69,34 +69,46 @@ class SpellChecker(object):
                 self.word_trie.insert(word)
                 self.word_set.add(word)
 
-    def _search_recursive(self, node, letter, word, prev_row, results):
+    # Levenshtein distance bretween strings: 'lousy', 'google'
+    #    | j- g  o  o  g  l  e
+    # ------------------------
+    # i- | 0  1  2  3  4  5  6
+    # l  | 1  0  1  2  3  4  5
+    # o  | 2  1  1  2  3  4  4
+    # u  | 3  2  2  1  2  3  4
+    # s  | 4  3  3  2  2  3  4
+    # y  | 5  4  4  3  3  3  4 <-- this is our final cost/distance.
+
+    def _search_recursive(self, node, letter, word, one_ago, results):
         '''Recursive function for building our Levenshtein table
         one row at a time.'''
         # Get a matrix of one row for the letter, with a column for each
         # letter in 'word'. Plus a column for the empty string at col 0.
         n_columns = len(word) + 1     # number of columns
-        cur_row = [prev_row[0] + 1]
-        for column_no in xrange(1, n_columns):
-            insert_cost = cur_row[column_no - 1] + 1    # v1
-            delete_cost = prev_row[column_no] + 1       # v2
-            # If previous letter in word is not 'letter'
-            if word[column_no - 1] != letter:
-                replace_cost = prev_row[column_no - 1] + 1  # v3
-            else:   # previous letter in word is 'letter'
-                replace_cost = prev_row[column_no - 1]      # v3
+        this_row = [one_ago[0] + 1]
+        for y in xrange(1, n_columns):
+            if word[y - 1] == letter:   # Cost addition for substitution.
+                cost = 0
+            else:
+                cost = 1
+            insert = this_row[y - 1] + 1
+            delete = one_ago[y] + 1
+            substitute = one_ago[y - 1] + cost
             # Get lowest cost
-            new_col = min(insert_cost, delete_cost, replace_cost)
-            cur_row.append(new_col)
+            new_entry = min(insert, delete, substitute)
+            # This is where Levenshtein ends and we add an additional
+            # computation to make it a Damerau-Levenshtein distance.
+            this_row.append(new_entry)
         # If the last entry in the current row is less than 2,
         # and there is a word in this node, then add it.
-        if cur_row[-1] <= self.max_cost and node.word is not None:
+        if this_row[-1] <= self.max_cost and node.word is not None:
             results.append((node.word))
         # If ANY entries in the current row are less than our cost, then
         # recur on each branch.
-        if min(cur_row) <= self.max_cost:
+        if min(this_row) <= self.max_cost:
             for letter in node.children:
                 self._search_recursive(node.children[letter], letter, word,
-                                       cur_row, results)
+                                       this_row, results)
 
     def search_word_trie(self, word):
         '''Returns a list of all words within our maximum Levenshtein
