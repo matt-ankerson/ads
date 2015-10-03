@@ -99,7 +99,7 @@ class SpellChecker(object):
             # This is where Levenshtein ends and we add an additional
             # computation to make it a Damerau-Levenshtein distance.
             this_row.append(new_entry)
-        # If the last entry in the current row is less than 2,
+        # If the last entry in the current row is less than our max cost,
         # and there is a word in this node, then add it.
         if this_row[-1] <= self.max_cost and node.word is not None:
             results.append((node.word))
@@ -109,6 +109,47 @@ class SpellChecker(object):
             for letter in node.children:
                 self._search_recursive(node.children[letter], letter, word,
                                        this_row, results)
+
+    def _damlev_distance(self, str1, str2):
+        '''Calculate the damerau-levenshtein distance between two
+        strings or any two sequences.'''
+        # Get a matrix with len(str1) rows and len(str2) columns
+        matrix = [[0 for c in range(len(str2))] for r in range(len(str1))]
+        for a in range(0, len(str1)):
+            matrix[a][0] = a
+        for b in range(1, len(str2)):
+            matrix[0][b] = b
+        for i in xrange(1, len(str1)):
+            for j in xrange(1, len(str2)):
+                if str1[i] == str2[j]:
+                    cost = 0
+                else:
+                    cost = 1
+                deletion = matrix[i - 1][j] + 1
+                insertion = matrix[i][j - 1] + 1
+                substitute = matrix[i - 1][j - 1] + cost
+                matrix[i][j] = min(deletion, insertion, substitute)
+                # Transposition
+                if i > 1 and j > 1 and str1[i] == str2[j - 1] and \
+                        str1[i - 1] == str2[j]:
+                    transpose = matrix[i - 2][j - 2] + cost
+                    matrix[i][j] = min(matrix[i][j], transpose)
+        return matrix[len(str1) - 1][len(str2) - 1]
+
+    def _recur_trie_for_suggestions(self, node, target_word, results):
+        # Is there a word in this node?
+        # if node.word is not None:
+        distance = self.max_cost + 1
+        if node.word is not None:
+            distance = self._damlev_distance(target_word, node.word)
+        # Is this distance <= to our max distance?
+        if distance <= self.max_cost:
+            results.append((node.word))
+        # recur down each branch of this node
+        for letter in node.children:
+            self._recur_trie_for_suggestions(node.children[letter],
+                                             target_word, results)
+        return results
 
     def search_word_trie(self, word):
         '''Returns a list of all words within our maximum Levenshtein
@@ -120,12 +161,14 @@ class SpellChecker(object):
             return []
         # First row of distance table. 1 col for each letter, plus 1 for the
         # empty string in the first node.
-        cur_row = range(len(word) + 1)
+        # first_row = range(len(word) + 1)
         results = []
         # Recur down each branch of the trie.
         for letter in self.word_trie.children:
-            self._search_recursive(self.word_trie.children[letter], letter,
-                                   word, cur_row, results)
+            # self._search_recursive(self.word_trie.children[letter], letter,
+            #                       word, first_row, results)
+            self._recur_trie_for_suggestions(self.word_trie.children[letter],
+                                             word, results)
         return results
 
     def iter_spelling_on_file(self, filename):
