@@ -34,7 +34,7 @@ class SpellChecker(object):
         # incorrectly consider miss-spelled.
         self.word_set = set()
         self.word_trie = self._TrieNode()           # Use trie for word map.
-        self.max_cost = 1   # For our maximum Levenshtein distance / cost.
+        self.max_cost = 2   # For our maximum Levenshtein distance / cost.
         if correct_words_filename == '':
             correct_words_filename = 'correct_words.txt'
         self.load_correct_words(correct_words_filename)
@@ -178,6 +178,7 @@ class SpellChecker(object):
         '''Returns a list of all words within our maximum Levenshtein
         distance to the given word.'''
         length = len(word)
+        results = []
         if length == 1:
             return []
         if word in self.word_set:
@@ -185,7 +186,6 @@ class SpellChecker(object):
         # First row of distance table. 1 col for each letter, plus 1 for the
         # empty string in the first node.
         first_row = range(len(word) + 1)
-        results = []
         prev_letter = ''
         for letter in self.word_trie.children:
             # Save second rows into the child nodes.
