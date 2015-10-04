@@ -14,6 +14,7 @@ class SpellChecker(object):
         def __init__(self):
             self.word = None
             self.children = {}
+            self.second_row = None
 
         def insert(self, word):
             node = self
@@ -79,25 +80,31 @@ class SpellChecker(object):
     # s  | 4  3  3  2  2  3  4
     # y  | 5  4  4  3  3  3  4 <-- this is our final cost/distance.
 
-    def _search_recursive(self, node, letter, word, one_ago, results):
+    def _search_recursive(self, node, this_letter, prev_letter, word,
+                          one_ago, two_ago, results):
         '''Recursive function for building our Levenshtein table
         one row at a time.'''
         # Get a matrix of one row for the letter, with a column for each
         # letter in 'word'. Plus a column for the empty string at col 0.
         n_columns = len(word) + 1     # number of columns
         this_row = [one_ago[0] + 1]
-        for y in xrange(1, n_columns):
-            if word[y - 1] == letter:   # Cost addition for substitution.
+        for j in xrange(1, n_columns):
+            if word[j - 1] == this_letter:   # Cost addition for substitution.
                 cost = 0
             else:
                 cost = 1
-            insert = this_row[y - 1] + 1
-            delete = one_ago[y] + 1
-            substitute = one_ago[y - 1] + cost
+            insert = this_row[j - 1] + 1
+            delete = one_ago[j] + 1
+            substitute = one_ago[j - 1] + cost
             # Get lowest cost
             new_entry = min(insert, delete, substitute)
             # This is where Levenshtein ends and we add an additional
             # computation to make it a Damerau-Levenshtein distance.
+            # Transposition:
+            if prev_letter != '' and j > 1 and this_letter == word[j - 2] \
+                    and prev_letter == word[j - 1]:
+                transpose = two_ago[j - 2] + cost
+                new_entry = min(new_entry, transpose)
             this_row.append(new_entry)
         # If the last entry in the current row is less than our max cost,
         # and there is a word in this node, then add it.
@@ -107,20 +114,36 @@ class SpellChecker(object):
         # recur on each branch.
         if min(this_row) <= self.max_cost:
             for letter in node.children:
-                self._search_recursive(node.children[letter], letter, word,
-                                       this_row, results)
+                self._search_recursive(node.children[letter], letter,
+                                       this_letter, word, this_row,
+                                       one_ago, results)
+
+    def _second_row(self, letter, word, one_ago):
+        n_columns = len(word) + 1
+        this_row = [one_ago[0] + 1]
+        for j in xrange(1, n_columns):
+            if word[j - 1] == letter:
+                cost = 0
+            else:
+                cost = 1
+            insert = this_row[j - 1] + 1
+            delete = one_ago[j] + 1
+            substitute = one_ago[j - 1] + cost
+            # Get lowest cost
+            this_row.append(min(insert, delete, substitute))
+        return this_row
 
     def _damlev_distance(self, str1, str2):
         '''Calculate the damerau-levenshtein distance between two
         strings or any two sequences.'''
         # Get a matrix with len(str1) rows and len(str2) columns
-        matrix = [[0 for c in range(len(str2))] for r in range(len(str1))]
-        for a in range(0, len(str1)):
-            matrix[a][0] = a
-        for b in range(1, len(str2)):
-            matrix[0][b] = b
-        for i in xrange(1, len(str1)):
-            for j in xrange(1, len(str2)):
+        matrix = [[0 for j in range(len(str2))] for i in range(len(str1))]
+        for i in range(0, len(str1)):
+            matrix[i][0] = i
+        for j in range(1, len(str2)):
+            matrix[0][j] = j
+        for i in xrange(1, len(str1)):      # rows
+            for j in xrange(1, len(str2)):  # columns
                 if str1[i] == str2[j]:
                     cost = 0
                 else:
@@ -161,14 +184,22 @@ class SpellChecker(object):
             return []
         # First row of distance table. 1 col for each letter, plus 1 for the
         # empty string in the first node.
-        # first_row = range(len(word) + 1)
+        first_row = range(len(word) + 1)
         results = []
+        prev_letter = ''
+        for letter in self.word_trie.children:
+            # Save second rows into the child nodes.
+            row = self._second_row(letter, word, first_row)
+            self.word_trie.children[letter].second_row = row
         # Recur down each branch of the trie.
         for letter in self.word_trie.children:
-            # self._search_recursive(self.word_trie.children[letter], letter,
-            #                       word, first_row, results)
-            self._recur_trie_for_suggestions(self.word_trie.children[letter],
-                                             word, results)
+            # Recur down each branch
+            node = self.word_trie.children[letter]
+            self._search_recursive(node, letter, prev_letter, word,
+                                   node.second_row, first_row, results)
+            # self._recur_trie_for_suggestions(self.word_trie.children[letter],
+            #                                 word, results)
+            prev_letter = letter
         return results
 
     def iter_spelling_on_file(self, filename):
