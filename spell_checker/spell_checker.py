@@ -1,10 +1,24 @@
 # Author: Matt Ankerson
-# Date:   29 September 2015
+# Date:   5 October 2015
 # The purpose of this module is to provide a spell checker for any text file.
+# This solution attempts to solve the problem using the Damerau -
+# Levenshtein distance algorithm. Levenshtein distance is defined as the
+# minimum number of edits required to transform one string into the other.
+# I came to my solution with the help of Steve Hanov's blog post:
+# stevehanov.ca/blog/index.php?id=114
+# And the wikipedia articles here:
+# https://en.wikipedia.org/wiki/Levenshtein_distance
+# https://en.wikipedia.org/wiki/Damerau-Levenshtein_distance
 
-# This iteration of my solution attempts to solve the problem using the
-# Levenshtein distance algorithm. Levenshtein distance is defined
-# as the min number of edits required to transform one string into the other.
+# Levenshtein distance bretween strings: 'lousy', 'google'
+#    | j- g  o  o  g  l  e
+# ------------------------
+# i- | 0  1  2  3  4  5  6
+# l  | 1  0  1  2  3  4  5
+# o  | 2  1  1  2  3  4  4
+# u  | 3  2  2  1  2  3  4
+# s  | 4  3  3  2  2  3  4
+# y  | 5  4  4  3  3  3  4 <-- this is our final cost/distance.
 
 
 class SpellChecker(object):
@@ -14,6 +28,7 @@ class SpellChecker(object):
         def __init__(self):
             self.word = None
             self.children = {}
+            # For computing distance tables incrementally.
             self.second_row = None
 
         def insert(self, word):
@@ -30,37 +45,14 @@ class SpellChecker(object):
     def __init__(self, correct_words_filename=''):
         # Python set holds all correct words for very fast validation.
         # We're using more memory by doing this, but reducing the number of
-        # computations performed by weeding out words that the trie would
-        # incorrectly consider miss-spelled.
+        # computations performed and purifying results by weeding out words
+        # that the trie based algoritm doesn't need to deal with.
         self.word_set = set()
         self.word_trie = self._TrieNode()           # Use trie for word map.
         self.max_cost = 2   # For our maximum Levenshtein distance / cost.
         if correct_words_filename == '':
             correct_words_filename = 'correct_words.txt'
         self.load_correct_words(correct_words_filename)
-
-    def build_matrix(self, n, m):
-        '''Build a row*col matrix.'''
-        matrix = [[i for i in range(m)]]
-        row = [0 for i in range(m)]
-        for i in range(1, n):
-            matrix.append(row[:])
-            matrix[i][0] = i
-        return matrix
-
-    def calculate_distance(self, start, finish):
-        '''Calculate Levenshtein distance between two words.'''
-        n = len(start)
-        m = len(finish)
-        matrix = self.build_matrix(n + 1, m + 1)
-        for i in range(1, n + 1):   # For each row
-            for j in range(1, m + 1):   # For each col
-                cost = int((ord(start[i - 1]) - ord(finish[j - 1])) != 0)
-                v1 = matrix[i - 1][j] + 1           # deletion of a char
-                v2 = matrix[i][j - 1] + 1           # insersion of a char
-                v3 = matrix[i - 1][j - 1] + cost    # match or mismatch
-                matrix[i][j] = min(v1, v2, v3)  # take the minimum value
-        return matrix[n][m]
 
     def load_correct_words(self, filename):
         '''Load lines of text file at filename into the set and trie.'''
@@ -69,16 +61,6 @@ class SpellChecker(object):
                 word = str.strip(line)
                 self.word_trie.insert(word)
                 self.word_set.add(word)
-
-    # Levenshtein distance bretween strings: 'lousy', 'google'
-    #    | j- g  o  o  g  l  e
-    # ------------------------
-    # i- | 0  1  2  3  4  5  6
-    # l  | 1  0  1  2  3  4  5
-    # o  | 2  1  1  2  3  4  4
-    # u  | 3  2  2  1  2  3  4
-    # s  | 4  3  3  2  2  3  4
-    # y  | 5  4  4  3  3  3  4 <-- this is our final cost/distance.
 
     def _search_recursive(self, node, this_letter, prev_letter, word,
                           one_ago, two_ago, results):
@@ -110,7 +92,7 @@ class SpellChecker(object):
         # and there is a word in this node, then add it.
         if this_row[-1] <= self.max_cost and node.word is not None:
             results.append((node.word))
-        # If ANY entries in the current row are less than our cost, then
+        # If an entry in the current row are less than our cost, then
         # recur on each branch.
         if min(this_row) <= self.max_cost:
             for letter in node.children:
@@ -119,6 +101,9 @@ class SpellChecker(object):
                                        one_ago, results)
 
     def _second_row(self, letter, word, one_ago):
+        '''Get single Levenshtein distance row. Especially useful for
+        getting the first two rows for the recursive Damerau-Levenshtein
+        table building function.'''
         n_columns = len(word) + 1
         this_row = [one_ago[0] + 1]
         for j in xrange(1, n_columns):
@@ -133,50 +118,9 @@ class SpellChecker(object):
             this_row.append(min(insert, delete, substitute))
         return this_row
 
-    def _damlev_distance(self, str1, str2):
-        '''Calculate the damerau-levenshtein distance between two
-        strings or any two sequences.'''
-        # Get a matrix with len(str1) rows and len(str2) columns
-        matrix = [[0 for j in range(len(str2))] for i in range(len(str1))]
-        for i in range(0, len(str1)):
-            matrix[i][0] = i
-        for j in range(1, len(str2)):
-            matrix[0][j] = j
-        for i in xrange(1, len(str1)):      # rows
-            for j in xrange(1, len(str2)):  # columns
-                if str1[i] == str2[j]:
-                    cost = 0
-                else:
-                    cost = 1
-                deletion = matrix[i - 1][j] + 1
-                insertion = matrix[i][j - 1] + 1
-                substitute = matrix[i - 1][j - 1] + cost
-                matrix[i][j] = min(deletion, insertion, substitute)
-                # Transposition
-                if i > 1 and j > 1 and str1[i] == str2[j - 1] and \
-                        str1[i - 1] == str2[j]:
-                    transpose = matrix[i - 2][j - 2] + cost
-                    matrix[i][j] = min(matrix[i][j], transpose)
-        return matrix[len(str1) - 1][len(str2) - 1]
-
-    def _recur_trie_for_suggestions(self, node, target_word, results):
-        # Is there a word in this node?
-        # if node.word is not None:
-        distance = self.max_cost + 1
-        if node.word is not None:
-            distance = self._damlev_distance(target_word, node.word)
-        # Is this distance <= to our max distance?
-        if distance <= self.max_cost:
-            results.append((node.word))
-        # recur down each branch of this node
-        for letter in node.children:
-            self._recur_trie_for_suggestions(node.children[letter],
-                                             target_word, results)
-        return results
-
     def search_word_trie(self, word):
-        '''Returns a list of all words within our maximum Levenshtein
-        distance to the given word.'''
+        '''Return a list of all words within our maximum Levenshtein
+        distance to the given word, and a list of suggestions.'''
         length = len(word)
         results = []
         if length == 1:
@@ -193,12 +137,9 @@ class SpellChecker(object):
             self.word_trie.children[letter].second_row = row
         # Recur down each branch of the trie.
         for letter in self.word_trie.children:
-            # Recur down each branch
             node = self.word_trie.children[letter]
             self._search_recursive(node, letter, prev_letter, word,
                                    node.second_row, first_row, results)
-            # self._recur_trie_for_suggestions(self.word_trie.children[letter],
-            #                                 word, results)
             prev_letter = letter
         return results
 
