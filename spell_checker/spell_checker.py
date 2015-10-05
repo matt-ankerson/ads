@@ -155,7 +155,7 @@ class SpellChecker(object):
                     word = word.translate(None, "'!.,$#@%^&*()+=")
                     word = word.lower()
                     results = self.search_word_trie(word)
-                    if len(results) > 0:
+                    if len(results) > 0 or word not in self.word_set:
                         yield 'Line: ' + str(line_no) + ' ' + word + ' (' + \
                             str(results).translate(None, "[]'()") + ')'
                 line_no += 1
