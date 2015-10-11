@@ -51,7 +51,7 @@ class SpellChecker(object):
         self.word_trie = self._TrieNode()           # Use trie for word map.
         self.max_cost = 2   # For our maximum Levenshtein distance / cost.
         if correct_words_filename == '':
-            correct_words_filename = 'correct_words.txt'
+            correct_words_filename = 'words.txt'
         self.load_correct_words(correct_words_filename)
 
     def load_correct_words(self, filename):
@@ -161,5 +161,5 @@ class SpellChecker(object):
                 line_no += 1
 
 if __name__ == '__main__':
-    speller = SpellChecker('correct_words.txt')
-    print speller.search_word_trie('goober')
+    speller = SpellChecker('words.txt')
+    print speller.search_word_trie('spellling')

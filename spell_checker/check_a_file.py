@@ -10,7 +10,7 @@ known_words = raw_input('Filename or path to dictionary of known words: ')
 print 'Loading trie from dictionary file...'
 
 if known_words is None or known_words == '':
-    known_words = 'unix_words.txt'
+    known_words = 'words.txt'
 speller = SpellChecker(known_words)
 filename = raw_input('File to check: ')
 if filename is None or filename == '':
