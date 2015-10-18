@@ -1,8 +1,10 @@
-from tree import Tree
+import tree
 
-
-class BinaryTree(Tree):
+class BinaryTree(tree.Tree):
     '''Abstract base class representing a binary tree structure.'''
+
+    def __init__(self):
+        super(BinaryTree, self).__init__()
     # Additional abstract functions:
 
     def left(self, p):

@@ -4,12 +4,12 @@ from queue import Queue
 # Date: 29 August 2015
 
 
-class Tree():
+class Tree(object):
     # 'Abstract' base class representing a tree.
 
     # --------------------------------------------------------------
     # Nested position class
-    class Position():
+    class Position(object):
         '''An abstraction representing the location of a single element.'''
 
         def element(self):

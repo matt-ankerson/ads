@@ -4,7 +4,7 @@ from binary_tree import BinaryTree
 class LinkedBinaryTree(BinaryTree):
     '''Linked representation of a binary tree structure.'''
 
-    class _Node():
+    class _Node(object):
         __slots__ = '_element', '_parent', '_left', '_right'
 
         def __init__(self, element, parent=None, left=None, right=None):
@@ -18,6 +18,7 @@ class LinkedBinaryTree(BinaryTree):
 
         def __init__(self, container, node):
             '''Constructor should not be invoked by user.'''
+            super(LinkedBinaryTree.Position, self).__init__()
             self._container = container
             self._node = node
 
@@ -30,7 +31,12 @@ class LinkedBinaryTree(BinaryTree):
             position.'''
             return type(other) is type(self) and other._node is self._node
 
-    def validate(self, p):
+        def __ne__(self, other):
+            '''Inverse of __eq__'''
+            return type(other) is not type(self) or \
+                other._node is not self._node
+
+    def _validate(self, p):
         '''Return associated node, if position is valid.'''
         if not isinstance(p, self.Position):
             raise TypeError('p must be proper Position type.')
@@ -46,6 +52,7 @@ class LinkedBinaryTree(BinaryTree):
 
     def __init__(self):
         '''Create an initially empty binary tree'''
+        super(LinkedBinaryTree, self).__init__()
         self._root = None
         self._size = 0
 
