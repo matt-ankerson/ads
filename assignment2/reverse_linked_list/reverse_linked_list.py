@@ -85,5 +85,33 @@ class LinkedList(object):
             yield cursor._element
             cursor = cursor._next
 
+    def __repr__(self):
+        display = '['
+        for item in self.__iter__():
+            display += str(item) + ','
+        return display[:-1] + ']'
+
+    def reverse(self):
+        current_node = self._head
+        last_node = None
+        while current_node is not None:
+            t = current_node._next
+            current_node._next = last_node
+            last_node = current_node
+            current_node = t
+        t = self._head
+        self._head = self._tail
+        self._tail = t
+
 if __name__ == '__main__':
     s = LinkedList()
+    s.append(1)
+    s.append(2)
+    s.append(3)
+    s.append(4)
+    s.append(5)
+    print s
+    s.reverse()
+    print s
+    s.reverse()
+    print s
