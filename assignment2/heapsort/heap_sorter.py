@@ -13,12 +13,6 @@ class HeapSorter(object):
     def _right(self, j):
         return 2 * j + 2
 
-    def _has_left(self, j, lst):
-        return self._left(j) < len(lst)
-
-    def _has_right(self, j, lst):
-        return self._right(j) < len(lst)
-
     def _swap(self, i, j, lst):
         '''Swap the elements at index i and j.'''
         lst[i], lst[j] = lst[j], lst[i]
@@ -42,7 +36,6 @@ class HeapSorter(object):
         '''Heapsort the sequence in place.'''
         # phase 1: Convert the sequence to a heap.
         n = len(s) - 1
-        # least_parent = n / 2
         least_parent = self._parent(len(s))
         for i in range(least_parent, -1, -1):
             self._downheap(i, n, s)
