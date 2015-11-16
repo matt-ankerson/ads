@@ -1,13 +1,14 @@
 def fizz_buzz():
     for x in xrange(1, 101):
         if x % 15 == 0:
-            print 'FizzBuzz'
+            yield 'FizzBuzz'
         elif x % 3 == 0:
-            print 'Fizz'
+            yield 'Fizz'
         elif x % 5 == 0:
-            print 'Buzz'
+            yield 'Buzz'
         else:
-            print x
+            yield x
 
 if __name__ == '__main__':
-    fizz_buzz()
+    for output in fizz_buzz():
+        print output
