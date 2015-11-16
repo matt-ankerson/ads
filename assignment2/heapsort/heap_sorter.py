@@ -18,6 +18,7 @@ class HeapSorter(object):
         lst[i], lst[j] = lst[j], lst[i]
 
     def _downheap(self, first, last, s):
+        '''Ensures the sequence s is a valid heap.'''
         largest = self._left(first)     # assume left child is largest.
         while largest <= last:
             # if right child exists and is larger:
@@ -25,6 +26,7 @@ class HeapSorter(object):
                 largest = self._right(first)
             # if child is larger than parent:
             if s[largest] > s[first]:
+                # perform swap
                 self._swap(largest, first, s)
                 # move down
                 first = largest
