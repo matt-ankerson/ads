@@ -1,7 +1,7 @@
 
 class HeapSorter(object):
 
-    def __init__(self, unsorted_sequence):
+    def __init__(self, unsorted_sequence=None):
         self._data = unsorted_sequence
         self._boundary = 0
 
@@ -12,7 +12,7 @@ class HeapSorter(object):
         return len(self) == 0
 
     def _parent(self, j):
-        return (j - 1) // 2
+        return (j - 1) / 2
 
     def _left(self, j):
         return 2 * j + 1
@@ -60,43 +60,25 @@ class HeapSorter(object):
             items.append(item)
         return items
 
-    def _increase_heap(self, i):
-        # shift the boundary rightward.
-        # upheap if necessary.
-        self._upheap(len(self) - 1)
-        self._boundary = i
-
-    def max(self):
-        if self.is_empty():
-            raise ValueError('Heap is empty.')
-        item = self._data[0]
-        return (item._key, item._value)
-
-    def _decrease_heap(self, i):
-        # shift the boundary leftward.
-        self._boundary = i
-        self._swap(0, len(self))    # put max key item at end.
-        self._downheap(0)
-
-    def sort(self):
-        '''Heapsort the given sequence in place.'''
+    def sort(self, s):
+        '''Heapsort the sequence in place.'''
+        self._data = s
         # phase 1: move the boundary from left to right, one step at a time.
-        for i in range(0, len(self._data) + 1):
-            self._increase_heap(i)
+        for i in range(1, len(self._data)):
+            self._upheap(i - 1)
+            self._boundary = i
 
         print 'heap: ' + str(self.get_heap())
-        print 'sequence: ' + str(self.get_sequence())
-        print 'boundary: ' + str(self._boundary)
 
         # phase 2: move the boundary from right to left, one step at a time.
         for i in range(len(self._data) - 1, -1, -1):
-            self._decrease_heap(i)
+            self._boundary = i
+            self._swap(0, len(self) - 1)
+            self._downheap(0)
+
+        print 'sequence: ' + str(self.get_sequence())
 
 if __name__ == '__main__':
-    s = [9, 8, 7, 6, 5, 4, 3, 2, 1]
-    heapsorter = HeapSorter(s)
-    print 'Unsorted:'
-    heapsorter.sort()
-    print 'Sorted:'
-    print 'heap: ' + str(heapsorter.get_heap())
-    print 'sequence: ' + str(heapsorter.get_sequence())
+    s = [6, 7, 5, 9, 2, 4]
+    heapsorter = HeapSorter()
+    heapsorter.sort(s)
